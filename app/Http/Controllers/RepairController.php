@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Notifications\RepairCreatedNotification;
+use App\Notifications\StatusChangedNotification;
+use Illuminate\Support\Facades\Notification;
 use App\Http\Requests\RepairStoreRequest;
 use App\Http\Requests\RepairUpdateRequest;
 use App\Models\Repair;
@@ -48,7 +51,21 @@ class RepairController extends Controller
 
     public function store(RepairStoreRequest $request)
     {
-        Repair::create($request->validated());
+        $repair = Repair::create($request->validated());
+        $repair->load('ticket.client');
+
+        if (
+            $repair->ticket &&
+            $repair->ticket->client &&
+            $repair->ticket->client->email
+        ) {
+            Notification::route('mail', $repair->ticket->client->email)
+                ->notify(new RepairCreatedNotification(
+                    $repair->ticket->ticket_number,
+                    $repair->status,
+                    $repair->ticket->client->first_name . ' ' . $repair->ticket->client->last_name
+                ));
+        }
 
         return redirect()->route('repairs.index')->with('success', 'Intervention créée avec succès.');
     }
@@ -66,12 +83,38 @@ class RepairController extends Controller
         return view('repairs.edit', compact('repair', 'tickets', 'technicians'));
     }
 
-    public function update(RepairUpdateRequest $request, Repair $repair)
-    {
-        $repair->update($request->validated());
+   public function update(RepairUpdateRequest $request, Repair $repair)
+{
+    $data = $request->validated();
 
-        return redirect()->route('repairs.index')->with('success', 'Intervention mise à jour avec succès.');
+    $repair->load('ticket.client');
+
+    $oldStatus = $repair->status;
+
+    $repair->update($data);
+
+    if (
+        isset($data['status']) &&
+        $oldStatus !== $repair->status &&
+        $repair->ticket &&
+        $repair->ticket->client &&
+        $repair->ticket->client->email
+    ) {
+        Notification::route('mail', $repair->ticket->client->email)
+         ->notify(new StatusChangedNotification(
+    'intervention',
+    $repair->ticket->ticket_number,
+    $oldStatus,
+    $repair->status,
+    $repair->ticket->client->first_name . ' ' . $repair->ticket->client->last_name
+));
     }
+
+    return redirect()
+        ->route('repairs.index')
+        ->with('success', 'Intervention mise à jour avec succès.');
+}
+
 
     public function destroy(Repair $repair)
     {

@@ -17,7 +17,7 @@ class TicketStoreRequest extends FormRequest
             'client_id' => ['required', 'exists:clients,id'],
             'device_id' => ['nullable', 'exists:devices,id'],
             'problem_description' => ['required', 'string'],
-            'diagnosis' => ['nullable', 'string'],
+            
             'status' => ['required', 'in:received,diagnosis,waiting_parts,repairing,completed,delivered,cancelled'],
             'priority' => ['required', 'in:low,medium,high,urgent'],
             'received_at' => ['nullable', 'date'],
@@ -34,7 +34,7 @@ class TicketStoreRequest extends FormRequest
             'client_id' => 'client',
             'device_id' => 'appareil',
             'problem_description' => 'description du problème',
-            'diagnosis' => 'diagnostic',
+        
             'status' => 'statut',
             'priority' => 'priorité',
             'received_at' => 'date de réception',

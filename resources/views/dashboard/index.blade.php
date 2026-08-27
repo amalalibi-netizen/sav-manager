@@ -14,6 +14,13 @@
 
     <div class="mb-4">
         <h1 class="h3 mb-1">Bienvenue, {{ auth()->user()->name }} !</h1>
+        <div class="mb-4 mt-3">
+    <a href="{{ route('clients.create') }}" class="btn btn-primary">
+        <i class="bi bi-person-plus"></i>
+        Ajouter un client
+    </a>
+</div>
+
         <p class="text-muted mb-0">Tableau de bord - Gestion SAV Manager</p>
     </div>
 

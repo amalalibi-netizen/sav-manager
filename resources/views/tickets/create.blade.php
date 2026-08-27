@@ -80,11 +80,7 @@
                         <input type="datetime-local" name="estimated_completion_at" id="estimated_completion_at" value="{{ old('estimated_completion_at') }}" class="form-control @error('estimated_completion_at') is-invalid @enderror">
                         @error('estimated_completion_at') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                     </div>
-                    <div class="col-12">
-                        <label for="diagnosis" class="form-label">Diagnostic</label>
-                        <textarea name="diagnosis" id="diagnosis" rows="3" class="form-control @error('diagnosis') is-invalid @enderror">{{ old('diagnosis') }}</textarea>
-                        @error('diagnosis') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                    </div>
+                   
                     <div class="col-12">
                         <label for="notes" class="form-label">Notes</label>
                         <textarea name="notes" id="notes" rows="3" class="form-control @error('notes') is-invalid @enderror">{{ old('notes') }}</textarea>

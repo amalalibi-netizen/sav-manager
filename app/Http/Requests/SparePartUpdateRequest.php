@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class SparePartUpdateRequest extends FormRequest
 {
@@ -16,7 +17,13 @@ class SparePartUpdateRequest extends FormRequest
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'reference_code' => ['sometimes', 'required', 'string', 'max:100', 'unique:spare_parts,reference_code,' . $this->sparePart->id],
+            'reference_code' => [
+                'sometimes',
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('spare_parts', 'reference_code')->ignore($this->route('spare_part')),
+            ],
             'unit_cost' => ['sometimes', 'required', 'numeric', 'min:0'],
             'quantity_in_stock' => ['sometimes', 'required', 'integer', 'min:0'],
             'minimum_stock' => ['nullable', 'integer', 'min:0'],

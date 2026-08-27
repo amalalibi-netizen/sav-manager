@@ -7,6 +7,9 @@ use App\Http\Requests\TicketUpdateRequest;
 use App\Models\Client;
 use App\Models\Device;
 use App\Models\Ticket;
+use App\Notifications\StatusChangedNotification;
+use App\Notifications\TicketCreatedNotification;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -54,7 +57,17 @@ class TicketController extends Controller
         $data['ticket_number'] = $ticketNumber;
         $data['received_at'] = $data['received_at'] ?? now();
 
-        Ticket::create($data);
+        $ticket = Ticket::create($data);
+        $ticket->load('client');
+
+        if ($ticket->client && $ticket->client->email) {
+            Notification::route('mail', $ticket->client->email)
+                ->notify(new TicketCreatedNotification(
+                    $ticket->ticket_number,
+                    $ticket->status,
+                    $ticket->client->first_name . ' ' . $ticket->client->last_name
+                ));
+        }
 
         return redirect()->route('tickets.index')->with('success', 'Ticket créé avec succès.');
     }
@@ -73,11 +86,33 @@ class TicketController extends Controller
     }
 
     public function update(TicketUpdateRequest $request, Ticket $ticket)
-    {
-        $ticket->update($request->validated());
+{
+    $data = $request->validated();
 
-        return redirect()->route('tickets.index')->with('success', 'Ticket mis à jour avec succès.');
+    $oldStatus = $ticket->status;
+
+    $ticket->update($data);
+
+    if (
+        isset($data['status']) &&
+        $oldStatus !== $ticket->status &&
+        $ticket->client &&
+        $ticket->client->email
+    ) {
+        Notification::route('mail', $ticket->client->email)
+           ->notify(new StatusChangedNotification(
+    'ticket',
+    $ticket->ticket_number,
+    $oldStatus,
+    $ticket->status,
+    $ticket->client->first_name . ' ' . $ticket->client->last_name
+));
     }
+
+    return redirect()
+        ->route('tickets.index')
+        ->with('success', 'Ticket mis à jour avec succès.');
+}
 
     public function destroy(Ticket $ticket)
     {

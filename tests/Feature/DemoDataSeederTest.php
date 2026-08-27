@@ -19,17 +19,17 @@ class DemoDataSeederTest extends TestCase
         Artisan::call('db:seed');
 
         $this->assertDatabaseHas('users', [
-            'email' => 'admin@savmanager.test',
+            'email' => 'amine.bensalem@sav.tn',
             'role' => 'admin',
         ]);
 
         $this->assertDatabaseHas('users', [
-            'email' => 'reception@savmanager.test',
+            'email' => 'sonia.trabelsi@sav.tn',
             'role' => 'receptionist',
         ]);
 
         $this->assertDatabaseHas('users', [
-            'email' => 'tech@savmanager.test',
+            'email' => 'yassine.gharbi@sav.tn',
             'role' => 'technician',
         ]);
 

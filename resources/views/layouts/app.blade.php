@@ -12,6 +12,11 @@
         .sidebar .nav-link { color: rgba(255,255,255,.7); }
         .sidebar .nav-link:hover, .sidebar .nav-link.active { color: white; background: rgba(255,255,255,.08); }
         .content-wrapper { min-height: 100vh; }
+        /* Fix Laravel pagination arrows */
+nav svg {
+    width: 20px !important;
+    height: 20px !important;
+}
     </style>
 </head>
 <body>

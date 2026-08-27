@@ -68,8 +68,6 @@
                 </tbody>
             </table>
         </div>
-        @if($devices->hasPages())
-            <div class="card-footer bg-white">{{ $devices->links() }}</div>
-        @endif
+    
     </div>
 @endsection

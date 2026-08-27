@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\SparePartStoreRequest;
 use App\Http\Requests\SparePartUpdateRequest;
 use App\Models\SparePart;
+use App\Models\User;
+use App\Notifications\LowStockNotification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\View\View;
 
 class SparePartController extends Controller
@@ -35,7 +38,8 @@ class SparePartController extends Controller
 
     public function store(SparePartStoreRequest $request)
     {
-        SparePart::create($request->validated());
+        $sparePart = SparePart::create($request->validated());
+        $this->notifyAdminsIfLowStock($sparePart);
 
         return redirect()->route('spare-parts.index')->with('success', 'Pièce ajoutée avec succès.');
     }
@@ -53,6 +57,7 @@ class SparePartController extends Controller
     public function update(SparePartUpdateRequest $request, SparePart $sparePart)
     {
         $sparePart->update($request->validated());
+        $this->notifyAdminsIfLowStock($sparePart);
 
         return redirect()->route('spare-parts.index')->with('success', 'Pièce mise à jour avec succès.');
     }
@@ -62,5 +67,23 @@ class SparePartController extends Controller
         $sparePart->delete();
 
         return redirect()->route('spare-parts.index')->with('success', 'Pièce supprimée avec succès.');
+    }
+
+    protected function notifyAdminsIfLowStock(SparePart $sparePart): void
+    {
+        if ($sparePart->quantity_in_stock > $sparePart->minimum_stock) {
+            return;
+        }
+
+        $admins = User::query()
+            ->where('role', 'admin')
+            ->whereNotNull('email')
+            ->get();
+
+        if ($admins->isEmpty()) {
+            return;
+        }
+
+        Notification::send($admins, new LowStockNotification($sparePart));
     }
 }

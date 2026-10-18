@@ -36,9 +36,15 @@ class TicketController extends Controller
             ->when($priority, fn ($query, $value) => $query->where('priority', $value))
             ->orderByDesc('received_at')
             ->paginate(10)
-            ->appends(['search' => $search, 'status' => $status, 'priority' => $priority]);
+            ->appends([
+                'search' => $search,
+                'status' => $status,
+                'priority' => $priority,
+            ]);
 
-        return view('tickets.index', compact('tickets', 'search', 'status', 'priority'));
+        return view('tickets.index', compact(
+            'tickets', 'search', 'status', 'priority'
+        ));
     }
 
     public function create(): View
@@ -51,10 +57,8 @@ class TicketController extends Controller
 
     public function store(TicketStoreRequest $request)
     {
-        $ticketNumber = $this->generateTicketNumber();
-
         $data = $request->validated();
-        $data['ticket_number'] = $ticketNumber;
+        $data['ticket_number'] = $this->generateTicketNumber();
         $data['received_at'] = $data['received_at'] ?? now();
 
         $ticket = Ticket::create($data);
@@ -65,11 +69,14 @@ class TicketController extends Controller
                 ->notify(new TicketCreatedNotification(
                     $ticket->ticket_number,
                     $ticket->status,
-                    $ticket->client->first_name . ' ' . $ticket->client->last_name
+                    $ticket->client->first_name . ' ' .
+                        $ticket->client->last_name
                 ));
         }
 
-        return redirect()->route('tickets.index')->with('success', 'Ticket créé avec succès.');
+        return redirect()
+            ->route('tickets.index')
+            ->with('success', 'Ticket créé avec succès.');
     }
 
     public function show(Ticket $ticket): View
@@ -86,46 +93,63 @@ class TicketController extends Controller
     }
 
     public function update(TicketUpdateRequest $request, Ticket $ticket)
-{
-    $data = $request->validated();
+    {
+        $data = $request->validated();
 
-    $oldStatus = $ticket->status;
+        $ticket->load('client');
 
-    $ticket->update($data);
+        $oldStatus = $ticket->status;
 
-    if (
-        isset($data['status']) &&
-        $oldStatus !== $ticket->status &&
-        $ticket->client &&
-        $ticket->client->email
-    ) {
-        Notification::route('mail', $ticket->client->email)
-           ->notify(new StatusChangedNotification(
-    'ticket',
-    $ticket->ticket_number,
-    $oldStatus,
-    $ticket->status,
-    $ticket->client->first_name . ' ' . $ticket->client->last_name
-));
+        $ticket->update($data);
+
+        if (
+            isset($data['status']) &&
+            $oldStatus !== $ticket->status &&
+            $ticket->client &&
+            $ticket->client->email
+        ) {
+            $clientName = $ticket->client->first_name . ' ' .
+                $ticket->client->last_name;
+
+            Notification::route('mail', $ticket->client->email)
+                ->notify(new StatusChangedNotification(
+                    'ticket',
+                    $ticket->ticket_number,
+                    $oldStatus,
+                    $ticket->status,
+                    $clientName
+                ));
+        }
+
+        return redirect()
+            ->route('tickets.index')
+            ->with('success', 'Ticket mis à jour avec succès.');
     }
-
-    return redirect()
-        ->route('tickets.index')
-        ->with('success', 'Ticket mis à jour avec succès.');
-}
 
     public function destroy(Ticket $ticket)
     {
         $ticket->delete();
 
-        return redirect()->route('tickets.index')->with('success', 'Ticket supprimé avec succès.');
+        return redirect()
+            ->route('tickets.index')
+            ->with('success', 'Ticket supprimé avec succès.');
     }
 
     protected function generateTicketNumber(): string
     {
         $year = now()->format('Y');
-        $lastTicket = Ticket::whereYear('created_at', $year)->orderByDesc('id')->first();
-        $number = $lastTicket ? ((int) str_replace(['SAV-' . $year . '-', 'SAV-' . $year], '', $lastTicket->ticket_number)) + 1 : 1;
+
+        $lastTicket = Ticket::whereYear('created_at', $year)
+            ->orderByDesc('id')
+            ->first();
+
+        $number = $lastTicket
+            ? ((int) str_replace(
+                ['SAV-' . $year . '-', 'SAV-' . $year],
+                '',
+                $lastTicket->ticket_number
+            )) + 1
+            : 1;
 
         return sprintf('SAV-%s-%04d', $year, $number);
     }
